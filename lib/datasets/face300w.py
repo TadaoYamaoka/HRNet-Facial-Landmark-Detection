@@ -62,18 +62,29 @@ class Face300W(data.Dataset):
         nparts = pts.shape[0]
         img = np.array(Image.open(image_path).convert('RGB'), dtype=np.float32)
 
-        r = 0
-        if self.is_train:
-            scale = scale * (random.uniform(1 - self.scale_factor,
-                                            1 + self.scale_factor))
-            r = random.uniform(-self.rot_factor, self.rot_factor) \
-                if random.random() <= 0.6 else 0
-            if random.random() <= 0.5 and self.flip:
-                img = np.fliplr(img)
-                pts = fliplr_joints(pts, width=img.shape[1], dataset='300W')
-                center[0] = img.shape[1] - center[0]
+        scale_tmp = scale
+        img_tmp = img
+        center_tmp = center
+        while True:
+            scale = scale_tmp
+            img = img_tmp
+            center = center_tmp.clone()
+            try:
+                r = 0
+                if self.is_train:
+                    scale = scale * (random.uniform(1 - self.scale_factor,
+                                                    1 + self.scale_factor))
+                    r = random.uniform(-self.rot_factor, self.rot_factor) \
+                        if random.random() <= 0.6 else 0
+                    if random.random() <= 0.5 and self.flip:
+                        img = np.fliplr(img)
+                        pts = fliplr_joints(pts, width=img.shape[1], dataset='300W')
+                        center[0] = img.shape[1] - center[0]
 
-        img = crop(img, center, scale, self.input_size, rot=r)
+                img = crop(img, center, scale, self.input_size, rot=r)
+                break
+            except:
+                continue
 
         target = np.zeros((nparts, self.output_size[0], self.output_size[1]))
         tpts = pts.copy()
