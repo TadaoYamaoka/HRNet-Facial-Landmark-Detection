@@ -10,9 +10,11 @@ from __future__ import print_function
 
 import time
 import logging
+import os
 
 import torch
 import numpy as np
+import cv2
 
 from .evaluation import decode_preds, compute_nme
 
@@ -209,6 +211,16 @@ def inference(config, data_loader, model):
             # measure elapsed time
             batch_time.update(time.time() - end)
             end = time.time()
+
+            # output image
+            labels = preds.detach().numpy()
+            for j in range(labels.shape[0]):
+                path = data_loader.dataset.landmarks_frame.iloc[int(meta['index'][j]), 0]
+                img = cv2.imread(os.path.join(data_loader.dataset.data_root, path))
+                label = labels[j]
+                for k in range(len(label)):
+                    img = cv2.circle(img, tuple(label[k]), radius=3, color=(0, 255, 0), thickness=1)
+                cv2.imwrite(f'output/test/{i}-{j}.jpg', img)
 
     nme = nme_batch_sum / nme_count
     failure_008_rate = count_failure_008 / nme_count
